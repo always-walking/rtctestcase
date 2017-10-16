@@ -838,9 +838,16 @@ long RTC5open(void) {
      if(gLibRTC5)
          return(-2);
 
-     gLibRTC5 = LoadLibrary( _T("RTC5DLL.DLL"));
-     if(!gLibRTC5)
-         return(-1);
+#if defined(_WIN32) || defined(WIN32)
+	 gLibRTC5 = LoadLibrary(_T("RTC5DLL.DLL"));
+#endif
+
+#if defined(_WIN64) || defined(WIN64)
+	 gLibRTC5 = LoadLibrary(_T("RTC5DLLx64.DLL"));
+#endif
+
+	 if (!gLibRTC5)
+		 return(-1);
 
 	using namespace rtc5;
 

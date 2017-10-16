@@ -16,9 +16,6 @@
 
 #include <windows.h>
 
-#if defined(__cplusplus)
-extern "C" {
-#endif //defined(__cplusplus)
 
 #if !defined(ULONG_PTR)         //  usually defined in <BaseTsd.h>
     #if defined(WIN32)
@@ -1637,7 +1634,4 @@ extern STEPPER_WAIT stepper_wait;
 } //namespace
 
 
-#if defined(__cplusplus)
-}      //  extern "C"
-#endif //defined(__cplusplus)
 

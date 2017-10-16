@@ -68,6 +68,15 @@ bool	__stdcall	Rtc5::initialize(double kfactor, char* lpszCtbFileName)
 	select_cor_table(1, 0);	//1 correction file at primary head
 
 	set_standby(0, 0);
+
+
+	set_laser_mode(0);	//co2 mode
+
+	short ctrlMode = \
+		0x01 << 0 +	//ext start enabled
+		0x01 << 1; // ext stop enabled
+	set_control_mode(ctrlMode);
+
 	return true;
 }
 
@@ -135,6 +144,27 @@ bool __stdcall	Rtc5::listArc(double cx, double cy, double sweepAngle)
 	arc_abs(cxbits, cybits, -sweepAngle);
 	return true;
 }
+
+bool	__stdcall Rtc5::listOn(double msec)
+{
+	double remind_msec = msec;
+	while (remind_msec > 1000)
+	{
+		laser_on_list(1000 * 1000 / 10);
+		remind_msec -= 1000;
+	}
+
+	laser_on_list(remind_msec * 1000 / 10);
+	return TRUE;
+
+}
+
+bool	__stdcall	Rtc5::listOff()
+{
+	laser_signal_off_list();
+	return true;
+}
+
 
 bool __stdcall	Rtc5::listEnd()
 {

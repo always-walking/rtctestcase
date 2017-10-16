@@ -353,7 +353,14 @@ int RTC4open(void) {
     if(gLibRTC4)
         return(-2);
 
-    gLibRTC4 = LoadLibrary(_T("RTC4DLL.DLL"));
+#if defined(_WIN32) || defined(WIN32)
+	gLibRTC4 = LoadLibrary(_T("RTC4DLL.DLL"));
+#endif
+
+#if defined(_WIN64) || defined(WIN64)
+	gLibRTC4 = LoadLibrary(_T("RTC4DLLx64.DLL"));
+#endif
+
     if(!gLibRTC4)
 		return(-1);
 

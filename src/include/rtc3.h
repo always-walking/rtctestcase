@@ -20,6 +20,8 @@ public:
 	virtual bool	__stdcall	listJump(double x, double y); /// mm
 	virtual bool	__stdcall	listMark(double x, double y);	/// mm
 	virtual bool	__stdcall	listArc(double cx, double cy, double sweepAngle); /// mm, mm, positive angle is ccw, 
+	virtual bool	__stdcall	listOn(double msec);
+	virtual bool	__stdcall	listOff();
 	virtual bool	__stdcall	listEnd();	/// closing internal buffers
 	virtual bool	__stdcall	listExecute(bool wait);	/// blocking until finish
 	

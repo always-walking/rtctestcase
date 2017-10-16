@@ -28,6 +28,7 @@
 #include <windows.h>
 #include "RTC3expl.h"
 #include <tchar.h>
+#include <cassert>
 
 HINSTANCE gLibRTC3 = NULL;
 
@@ -359,7 +360,15 @@ int RTC3open(void) {
     if(gLibRTC3)
         return(-2);
 
+#if defined(_WIN32) || defined(WIN32)
     gLibRTC3 = LoadLibrary(_T("RTC3DLL.DLL"));
+#endif
+
+#if defined(_WIN64) || defined(WIN64)
+	gLibRTC3 = NULL;
+	assert(!"rtc3 is not support x64");
+#endif
+
     if(!gLibRTC3)
         return(-1);
 

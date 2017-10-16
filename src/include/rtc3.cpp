@@ -147,6 +147,26 @@ bool __stdcall	Rtc3::listArc(double cx, double cy, double sweepAngle)
 	return true;
 }
 
+bool	__stdcall Rtc3::listOn(double msec)
+{
+	double remind_msec = msec;
+	while (remind_msec > 1000)
+	{
+		laser_on_list(1000 * 1000 / 10);
+		remind_msec -= 1000;
+	}
+
+	laser_on_list(remind_msec * 1000 / 10);
+	return TRUE;
+
+}
+
+bool	__stdcall	Rtc3::listOff()
+{
+	laser_signal_off_list();
+	return true;
+}
+
 bool __stdcall	Rtc3::listEnd()
 {
 	set_end_of_list();	
