@@ -7,8 +7,8 @@
 *                                                                                *
 *                                                                                *
 * 1. Descriptions                                                                *
-*  Using rtc controller to control laser and scanner(galvanometers) are easy way * 
-*  to implement via c/c++                                                        *
+*  Simple way to use rtc controller to control laser and scanner(galvanometers)  * 
+*  via sample demo program                                                       *
 *                                                                                *
 *                                                                                *
 * 2. Author                                                                      *
