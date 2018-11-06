@@ -25,7 +25,7 @@ bool	__stdcall	Rtc4::initialize(double kfactor, char* ctbFileName)
 	int error = RTC4open();
 	if (0 != error)
 	{
-		fprintf(stderr, "fail to initialize the rtc4 library. error code = %d", error);
+		fprintf(stderr, "fail to initialize the rtc4 library. error code = %d\r\n", error);
 		return false;
 	}
 	_kfactor = kfactor;
@@ -38,22 +38,50 @@ bool	__stdcall	Rtc4::initialize(double kfactor, char* ctbFileName)
 		return false;
 	}
 
+	UINT32 rtcVersion = get_rtc_version();
+	fprintf(stdout, "card count : %d. dll, hex, firmware version : %d, %d, %d\r\n", \
+		rtc4_count_cards(), get_dll_version(), get_hex_version(), rtcVersion & 0x0F);
+
+	if (rtcVersion & 0x100)
+		fprintf(stdout, "processing on the fly option enabled\r\n");
+
+	if (rtcVersion & 0x200)
+		fprintf(stdout, ("2nd scanhead option enabled\r\n"));
+
+	if (rtcVersion & 0x400)
+	{
+		error = load_program_file("RTC4D3.hex");
+		if (0 != error)
+		{
+			fprintf(stderr, "fail to load the rtc4d3.hex program file :  error code = %d\r\n", error);
+			return false;
+		}
+		fprintf(stdout, ("3d option (varioscan) enabled\r\n"));
+		_3d = TRUE;
+	}
+	else
+		_3d = FALSE;
+
+	_kfactor = kfactor;
 	error = load_correction_file(
 		ctbFileName,		// ctb
-		1,	// table no (1 or 2)
-		1, 1,	//scale
+		1,	// table no (1 ~ 2)
+		1, 1,//scale
 		0, //theta
-		0, 0 //offset
+		0, 0//offset
 	);
+
 	if (0 != error)
 	{
-		fprintf(stderr, "fail to load the correction file :  error code = %d", error);
+		fprintf(stderr, "fail to load the correction file :  error code = %d\r\n", error);
 		return false;
 	}
 
-	select_cor_table(1, 0);	//1 correction file at primary head
+	if (_3d)
+		select_cor_table(1, 1);	//1 correction file at primary / secondary head	
+	else
+		select_cor_table(1, 0);	//1 correction file at primary head
 
-							// stand by
 	set_standby(0, 0);
 	return true;
 }
@@ -73,25 +101,38 @@ bool __stdcall	Rtc4::listTiming(double frequency, double pulsewidth)
 	
 	if (!this->isBufferReady(1))
 		return false;
-	set_laser_timing(
-		halfperiod,	//half period (us)
-		pulsewidth,
-		pulsewidth,
-		0);	// timebase 1 usec	
+
+	if (halfperiod < 1.0)
+	{
+		set_laser_timing(
+			(USHORT)(halfperiod * 8.0f),	//half period (us)
+			(USHORT)(pulsewidth * 8.0f),
+			(USHORT)(pulsewidth * 8.0f),
+			1);	//timebase 1/8 usec
+	}
+	else
+	{
+		set_laser_timing(
+			(USHORT)halfperiod,	//half period (us)
+			(USHORT)pulsewidth,
+			(USHORT)pulsewidth,
+			0);	// timebase 1 usec
+	}
 	return true;
 }
 
 bool __stdcall	Rtc4::listDelay(double on, double off, double jump, double mark, double polygon)
 {
-	if (!this->isBufferReady(1))
+	if (!this->isBufferReady(2))
 		return false;
+	set_laser_delays(
+		(USHORT)on,
+		(USHORT)off);
 	set_scanner_delays(
 		(jump / 10.0f),
 		(mark / 10.0f),
 		(polygon / 10.0f)
 	);
-	// unit: 10 usec
-
 	return true;
 }
 
@@ -107,33 +148,49 @@ bool __stdcall	Rtc4::listSpeed(double jump, double mark)
 	return true;
 }
 
-bool __stdcall	Rtc4::listJump(double x, double y)
+bool __stdcall	Rtc4::listJump(double x, double y, double z)
 {
 	int xbits = x * _kfactor;
 	int ybits = y * _kfactor;
+	int zbits = z * _kfactor;
 	if (!this->isBufferReady(1))
 		return false;
-	jump_abs(xbits, ybits);
+	if (_3d)
+		jump_abs_3d(xbits, ybits, zbits);
+	else
+		jump_abs(xbits, ybits);
 	return true;
 }
 
-bool __stdcall	Rtc4::listMark(double x, double y)
+bool __stdcall	Rtc4::listMark(double x, double y, double z)
 {
 	int xbits = x * _kfactor;
 	int ybits = y * _kfactor;
+	int zbits = z * _kfactor;
 	if (!this->isBufferReady(1))
 		return false;
-	mark_abs(xbits, ybits);
+	if (_3d)
+		mark_abs_3d(xbits, ybits, zbits);
+	else
+		mark_abs(xbits, ybits);
 	return true;
 }
 
-bool __stdcall	Rtc4::listArc(double cx, double cy, double sweepAngle)
+bool __stdcall	Rtc4::listArc(double cx, double cy, double sweepAngle, double cz)
 {
 	int cxbits = cx * _kfactor;
 	int cybits = cy * _kfactor;
+	int czbits = cy * _kfactor;
 	if (!this->isBufferReady(1))
 		return false;
-	arc_abs(cxbits, cybits, -sweepAngle);
+	if (_3d && cz != 0.0)
+	{
+		/// user defined code 
+		fprintf(stderr, "unsupported list arc with 3d\r\n");
+		return false;
+	}
+	else
+		arc_abs(cxbits, cybits, -sweepAngle);
 	return true;
 }
 

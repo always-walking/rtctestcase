@@ -8,8 +8,9 @@
  *
  * history
  * 2017.4.12  v0.1 first release
- * 2018.11.6  v0.2 added) rtc6 / rtc6 for ethernet	
+ * 2018.11.   v0.2 added) rtc6 / rtc6 for ethernet	
  *                  added) double buffered by automatically for massive data
+ * 2018.11.6  v0.3	added) 3d option (varioscan)
  *
  *
  **********************************************************************************/

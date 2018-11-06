@@ -25,7 +25,7 @@ bool	__stdcall	Rtc6::initialize(double kfactor, char* ct5FileName)
 	int error = RTC6open();
 	if (0 != error)
 	{
-		fprintf(stderr, "fail to initialize the rtc6 library. error code = %d", error);
+		fprintf(stderr, "fail to initialize the rtc6 library. error code = %d\r\n", error);
 		return false;
 	}
 
@@ -42,9 +42,27 @@ bool	__stdcall	Rtc6::initialize(double kfactor, char* ct5FileName)
 	error = load_program_file(NULL);
 	if (0 != error)
 	{
-		fprintf(stderr, "fail to load the rtc6 program file :  error code = %d", error);
+		fprintf(stderr, "fail to load the rtc6 program file :  error code = %d\r\n", error);
 		return false;
 	}
+
+	UINT32 rtcVersion = get_rtc_version();
+	fprintf(stdout, "card count : %d. dll, hex, firmware version : %d, %d, %d\r\n", \
+		rtc6_count_cards(), get_dll_version(), get_hex_version(), rtcVersion & 0x0F);
+
+	if (rtcVersion & 0x100)
+		fprintf(stdout, "processing on the fly option enabled\r\n");
+
+	if (rtcVersion & 0x200)
+		fprintf(stdout, ("2nd scanhead option enabled\r\n"));
+
+	if (rtcVersion & 0x400)
+	{
+		fprintf(stdout, ("3d option (varioscan) enabled\r\n"));
+		_3d = TRUE;
+	}
+	else
+		_3d = FALSE;
 
 	// Rtc6는 laser 및 gate신호 레벨을 설정할수가 있다
 	// active high 로 설정
@@ -53,19 +71,29 @@ bool	__stdcall	Rtc6::initialize(double kfactor, char* ct5FileName)
 
 	_kfactor = kfactor;
 
-	error = load_correction_file(
-		ct5FileName,		// ctb
-		1,	// table no (1 ~ 4)
-		2	// 2d
-	);
+	if (_3d)
+		error = load_correction_file(
+			ct5FileName,		// ctb
+			1,	// table no (1 ~ 4)
+			3	// 3d
+		);
+	else
+		error = load_correction_file(
+			ct5FileName,		// ctb
+			1,	// table no (1 ~ 4)
+			2	// 2d
+		);
 
 	if (0 != error)
 	{
-		fprintf(stderr, "fail to load the correction file :  error code = %d", error);
+		fprintf(stderr, "fail to load the correction file :  error code = %d\r\n", error);
 		return false;
 	}
 
-	select_cor_table(1, 0);	//1 correction file at primary head
+	if (_3d)
+		select_cor_table(1, 1);	//1 correction file at primary / secondary head	
+	else
+		select_cor_table(1, 0);	//1 correction file at primary head
 
 	set_standby(0, 0);
 
@@ -107,15 +135,17 @@ bool __stdcall	Rtc6::listTiming(double frequency, double pulsewidth)
 
 bool __stdcall	Rtc6::listDelay(double on, double off, double jump, double mark, double polygon)
 {
-	if (!this->isBufferReady(1))
+	if (!this->isBufferReady(2))
 		return false;
+	set_laser_delays(
+		(LONG)(on * 2.0f),
+		(LONG)(off * 2.0f)
+	);
 	set_scanner_delays(
 		(jump / 10.0f),
 		(mark / 10.0f),
 		(polygon / 10.0f)
 	);
-	// unit: 10 usec
-
 	return true;
 }
 
@@ -130,33 +160,45 @@ bool __stdcall	Rtc6::listSpeed(double jump, double mark)
 	return true;
 }
 
-bool __stdcall	Rtc6::listJump(double x, double y)
+bool __stdcall	Rtc6::listJump(double x, double y, double z)
 {
 	int xbits = x * _kfactor;
 	int ybits = y * _kfactor;
+	int zbits = z * _kfactor;
 	if (!this->isBufferReady(1))
 		return false;
-	jump_abs(xbits, ybits);
+	if (_3d)
+		jump_abs_3d(xbits, ybits, zbits);
+	else
+		jump_abs(xbits, ybits);
 	return true;
 }
 
-bool __stdcall	Rtc6::listMark(double x, double y)
+bool __stdcall	Rtc6::listMark(double x, double y, double z)
 {
 	int xbits = x * _kfactor;
 	int ybits = y * _kfactor;
+	int zbits = z * _kfactor;
 	if (!this->isBufferReady(1))
 		return false;
-	mark_abs(xbits, ybits);
+	if (_3d)
+		mark_abs_3d(xbits, ybits, zbits);
+	else
+		mark_abs(xbits, ybits);
 	return true;
 }
 
-bool __stdcall	Rtc6::listArc(double cx, double cy, double sweepAngle)
+bool __stdcall	Rtc6::listArc(double cx, double cy, double sweepAngle, double cz)
 {
 	int cxbits = cx * _kfactor;
 	int cybits = cy * _kfactor;
+	int czbits = cz * _kfactor;
 	if (!this->isBufferReady(1))
 		return false;
-	arc_abs(cxbits, cybits, -sweepAngle);
+	if (_3d)
+		arc_abs_3d(cxbits, cybits, czbits, -sweepAngle);
+	else
+		arc_abs(cxbits, cybits, -sweepAngle);
 	return true;
 }
 
@@ -193,13 +235,13 @@ bool __stdcall	Rtc6::listEnd()
 
 bool __stdcall Rtc6::listExecute(bool wait)
 {
-	execute_list(1);	//list 1
+	execute_list(1);	
 
 	if (wait)
 	{
 		unsigned int busy(0), position(0);
 		do {
-			::Sleep(50);
+			::Sleep(10);
 			get_status(&busy, &position);
 		} while (busy);
 	}
@@ -227,7 +269,7 @@ typedef union
 
 bool Rtc6::isBufferReady(UINT count)
 {
-	if ((_listcnt + count) >= 8000)
+	if ((_listcnt + count) >= 3500)
 	{
 		UINT busy(0), position(0);
 		get_status(&busy, &position);
