@@ -94,6 +94,9 @@ bool __stdcall	Rtc6::listTiming(double frequency, double pulsewidth)
 	double period = 1.0f / frequency * (double)1.0e6;	//usec
 	double halfperiod = period / 2.0f;
 
+	if (!this->isBufferReady(1))
+		return false;
+
 	set_laser_timing(
 		halfperiod * 64,	//half period (us)
 		pulsewidth * 64,
@@ -104,6 +107,8 @@ bool __stdcall	Rtc6::listTiming(double frequency, double pulsewidth)
 
 bool __stdcall	Rtc6::listDelay(double on, double off, double jump, double mark, double polygon)
 {
+	if (!this->isBufferReady(1))
+		return false;
 	set_scanner_delays(
 		(jump / 10.0f),
 		(mark / 10.0f),
@@ -118,7 +123,8 @@ bool __stdcall	Rtc6::listSpeed(double jump, double mark)
 {
 	double jump_bitpermsec = (double)(jump / 1.0e3 * _kfactor);
 	double mark_bitpermsec = (double)(mark / 1.0e3 * _kfactor);
-
+	if (!this->isBufferReady(2))
+		return false;
 	set_jump_speed(jump_bitpermsec);
 	set_mark_speed(mark_bitpermsec);
 	return true;
@@ -128,6 +134,8 @@ bool __stdcall	Rtc6::listJump(double x, double y)
 {
 	int xbits = x * _kfactor;
 	int ybits = y * _kfactor;
+	if (!this->isBufferReady(1))
+		return false;
 	jump_abs(xbits, ybits);
 	return true;
 }
@@ -136,6 +144,8 @@ bool __stdcall	Rtc6::listMark(double x, double y)
 {
 	int xbits = x * _kfactor;
 	int ybits = y * _kfactor;
+	if (!this->isBufferReady(1))
+		return false;
 	mark_abs(xbits, ybits);
 	return true;
 }
@@ -144,6 +154,8 @@ bool __stdcall	Rtc6::listArc(double cx, double cy, double sweepAngle)
 {
 	int cxbits = cx * _kfactor;
 	int cybits = cy * _kfactor;
+	if (!this->isBufferReady(1))
+		return false;
 	arc_abs(cxbits, cybits, -sweepAngle);
 	return true;
 }
@@ -153,20 +165,25 @@ bool	__stdcall Rtc6::listOn(double msec)
 	double remind_msec = msec;
 	while (remind_msec > 1000)
 	{
+		if (!this->isBufferReady(1))
+			return false;
 		laser_on_list(1000 * 1000 / 10);
 		remind_msec -= 1000;
 	}
 
+	if (!this->isBufferReady(1))
+		return false;
 	laser_on_list(remind_msec * 1000 / 10);
 	return TRUE;
 }
 
 bool	__stdcall	Rtc6::listOff()
 {
+	if (!this->isBufferReady(1))
+		return false;
 	laser_signal_off_list();
 	return true;
 }
-
 
 bool __stdcall	Rtc6::listEnd()
 {
