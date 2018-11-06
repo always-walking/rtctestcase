@@ -1,4 +1,5 @@
-/****************************************************************
+/**********************************************************************************
+ *
  *
  * testcase for scanlabs' rtc3/4/5 controller
  * powered by sepwind@gmail.com
@@ -6,16 +7,16 @@
  *
  *
  * history
- * 2017.4.12	v0.1 first release
+ * 2017.4.12  v0.1 first release
+ * 2018.11.6  v0.2 added) rtc6 / rtc6 for ethernet	
+ *                  added) double buffered by automatically for massive data
  *
  *
- ***************************************************************/
-
+ **********************************************************************************/
 
 #include "include\rtc.h"
 #include <math.h>
 #include <stdio.h>
-
 using namespace sepwind;
 
 int main()
@@ -37,7 +38,6 @@ int main()
 	// laser repetition rate : 50Khz , pulse width : 2usec
 	// laser delays : on/off
 	// scanner delays : jump/mark/polygon
-
 
 	// fire during 1sec on center position (0,0)
 	pRtc->listBegin();
