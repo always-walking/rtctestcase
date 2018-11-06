@@ -21,7 +21,7 @@ Rtc3::~Rtc3()
 
 }
 
-bool	__stdcall	Rtc3::initialize(double kfactor, char* lpszCtbFileName)
+bool	__stdcall	Rtc3::initialize(double kfactor, char* ctbFileName)
 {
 	int error = RTC3open();
 	if ( 0 != error)
@@ -40,12 +40,13 @@ bool	__stdcall	Rtc3::initialize(double kfactor, char* lpszCtbFileName)
     }
 
 	error = load_correction_file(
-		lpszCtbFileName,		// ctb
+		ctbFileName,		// ctb
 		1,	// table no (1 or 2)
 		1, 1,	//scale
 		0, //theta
 		0, 0 //offset
 	);
+
 	if (0 != error)
 	{
 		fprintf(stderr, "fail to load the correction file :  error code = %d", error);
@@ -61,7 +62,9 @@ bool	__stdcall	Rtc3::initialize(double kfactor, char* lpszCtbFileName)
 
 bool __stdcall	Rtc3::listBegin()
 {
-	set_start_list(1);//list 1
+	_list = 1;
+	_listcnt = 0;
+	set_start_list(1);
 	return true;
 }
 
@@ -175,7 +178,7 @@ bool __stdcall	Rtc3::listEnd()
 
 bool __stdcall Rtc3::listExecute(bool wait)
 {
-	execute_list(1);	//list 1
+	execute_list(1);	
 	
 	if (wait)
 	{
@@ -188,7 +191,67 @@ bool __stdcall Rtc3::listExecute(bool wait)
 	return true;
 }
 
+typedef union
+{
+	UINT16 value;
+	struct
+	{
+		UINT16	load1 : 1;
+		UINT16	load2 : 1;
+		UINT16	ready1 : 1;
+		UINT16	ready2 : 1;
+		UINT16	busy1 : 1;
+		UINT16	busy2 : 1;
+		UINT16	used1 : 1;
+		UINT16	reserved : 10;
+	};
+}READ_STATUS;
 
+bool Rtc3::isBufferReady(UINT count)
+{
+	if ((_listcnt + count) >= 8000)
+	{
+		USHORT busy(0), position(0);
+		get_status(&busy, &position);
+		if (!busy)
+		{
+			set_end_of_list();
+			execute_list(_list);
+			_list = _list ^ 0x03;
+			set_start_list(_list);
+		}
+		else
+		{
+			set_end_of_list();
+			auto_change();
+			READ_STATUS s;
+			switch (_list)
+			{
+			case 1:
+				do
+				{
+					s.value = read_status();
+					::Sleep(10);
+				} while (s.busy2);
+				break;
+
+			case 2:
+				do
+				{
+					s.value = read_status();
+					::Sleep(10);
+				} while (s.busy1);
+				break;
+			}
+			_list = _list ^ 0x03;
+			set_start_list(_list);
+		}
+
+		_listcnt = count;
+	}
+	_listcnt += count;
+	return TRUE;
+}
 
 
 }//namespace

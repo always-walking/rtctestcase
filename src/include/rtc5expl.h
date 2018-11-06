@@ -16,7 +16,6 @@
 
 #include <windows.h>
 
-
 #if !defined(ULONG_PTR)         //  usually defined in <BaseTsd.h>
     #if defined(WIN32)
         #define ULONG_PTR UINT
@@ -26,7 +25,6 @@
 #endif // !defined(ULONG_PTR)
 
 extern HINSTANCE gLibRTC5;
-
 
 long RTC5open(void);
 void RTC5close(void);

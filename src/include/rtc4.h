@@ -25,12 +25,15 @@ public:
 	virtual bool	__stdcall	listEnd();	/// closing internal buffers
 	virtual bool	__stdcall	listExecute(bool wait);	/// blocking until finish
 
-private:
-	double _kfactor;
+protected:
+	double	_kfactor;
+	UINT _list;
+	UINT _listcnt;
+	bool isBufferReady(UINT count);
 
 public:
 	Rtc4();
-	~Rtc4();
+	virtual ~Rtc4();
 };
 
 }//namespace

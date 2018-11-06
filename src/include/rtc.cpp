@@ -2,7 +2,8 @@
 #include "rtc3.h"
 #include "rtc4.h"
 #include "rtc5.h"
-
+#include "rtc6.h"
+#include "rtc6ethernet.h"
 
 namespace sepwind
 {
@@ -22,6 +23,17 @@ Rtc*	__stdcall	CreateRtc5()
 {
 	return new Rtc5();
 }
+
+Rtc*	__stdcall	CreateRtc6()
+{
+	return new Rtc6();
+}
+
+Rtc*	__stdcall	CreateRtc6Ethernet(const char* ipaddress)
+{
+	return new Rtc6Ethernet(ipaddress);
+}
+
 
 void	__stdcall	DestroyRtc(Rtc** pp)
 {

@@ -152,6 +152,9 @@
     <ClCompile Include="include\rtc4expl.cpp" />
     <ClCompile Include="include\rtc5.cpp" />
     <ClCompile Include="include\rtc5expl.cpp" />
+    <ClCompile Include="include\rtc6.cpp" />
+    <ClCompile Include="include\rtc6ethernet.cpp" />
+    <ClCompile Include="include\rtc6expl.cpp" />
     <ClCompile Include="rtctestcase.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -162,6 +165,12 @@
     <ClInclude Include="include\rtc4expl.h" />
     <ClInclude Include="include\rtc5.h" />
     <ClInclude Include="include\rtc5expl.h" />
+    <ClInclude Include="include\rtc6.h" />
+    <ClInclude Include="include\rtc6ethernet.h" />
+    <ClInclude Include="include\rtc6expl.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\README.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

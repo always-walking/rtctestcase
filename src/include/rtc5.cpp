@@ -20,12 +20,12 @@ Rtc5::~Rtc5()
 
 }
 
-bool	__stdcall	Rtc5::initialize(double kfactor, char* lpszCtbFileName)
+bool	__stdcall	Rtc5::initialize(double kfactor, char* ct5FileName)
 {
 	int error = RTC5open();
 	if (0 != error)
 	{
-		fprintf(stderr, "fail to initialize the Rtc5 library. error code = %d", error);
+		fprintf(stderr, "fail to initialize the rtc5 library. error code = %d", error);
 		return false;
 	}
 
@@ -42,23 +42,23 @@ bool	__stdcall	Rtc5::initialize(double kfactor, char* lpszCtbFileName)
 	error = load_program_file(NULL);
 	if (0 != error)
 	{
-		fprintf(stderr, "fail to load the Rtc5 program file :  error code = %d", error);
+		fprintf(stderr, "fail to load the rtc5 program file :  error code = %d", error);
 		return false;
 	}
 
 	// rtc5는 laser 및 gate신호 레벨을 설정할수가 있다
 	// active high 로 설정
-	int siglevel = (0x01 << 3) | (0x01 << 4);
-	set_laser_control(siglevel);
+	int sigLevel = (0x01 << 3) | (0x01 << 4);
+	set_laser_control(sigLevel);
 
 	_kfactor = kfactor;
 
-
 	error = load_correction_file(
-		lpszCtbFileName,		// ctb
+		ct5FileName,		// ct5
 		1,	// table no (1 ~ 4)
 		2	// 2d
 	);
+
 	if (0 != error)
 	{
 		fprintf(stderr, "fail to load the correction file :  error code = %d", error);
@@ -69,7 +69,6 @@ bool	__stdcall	Rtc5::initialize(double kfactor, char* lpszCtbFileName)
 
 	set_standby(0, 0);
 
-
 	set_laser_mode(0);	//co2 mode
 
 	short ctrlMode = \
@@ -77,12 +76,16 @@ bool	__stdcall	Rtc5::initialize(double kfactor, char* lpszCtbFileName)
 		0x01 << 1; // ext stop enabled
 	set_control_mode(ctrlMode);
 
+	config_list(4000, 4000);
+
 	return true;
 }
 
 bool __stdcall	Rtc5::listBegin()
 {
-	set_start_list(1);//list 1
+	_list = 1;
+	_listcnt = 0;
+	set_start_list(1);
 	return true;
 }
 
@@ -156,7 +159,6 @@ bool	__stdcall Rtc5::listOn(double msec)
 
 	laser_on_list(remind_msec * 1000 / 10);
 	return TRUE;
-
 }
 
 bool	__stdcall	Rtc5::listOff()
@@ -164,7 +166,6 @@ bool	__stdcall	Rtc5::listOff()
 	laser_signal_off_list();
 	return true;
 }
-
 
 bool __stdcall	Rtc5::listEnd()
 {
@@ -174,8 +175,7 @@ bool __stdcall	Rtc5::listEnd()
 
 bool __stdcall Rtc5::listExecute(bool wait)
 {
-	execute_list(1);	//list 1
-
+	execute_list(1);	
 	if (wait)
 	{
 		unsigned int busy(0), position(0);
@@ -187,5 +187,68 @@ bool __stdcall Rtc5::listExecute(bool wait)
 	return true;
 }
 
+
+typedef union
+{
+	UINT32 value;
+	struct
+	{
+		UINT32	load1 : 1;
+		UINT32	load2 : 1;
+		UINT32	ready1 : 1;
+		UINT32	ready2 : 1;
+		UINT32	busy1 : 1;
+		UINT32	busy2 : 1;
+		UINT32	used1 : 1;
+		UINT32	used2 : 1;
+		UINT32	reserved : 24;
+	};
+}READ_STATUS;
+
+bool Rtc5::isBufferReady(UINT count)
+{
+	if ((_listcnt + count) >= 8000)
+	{
+		UINT busy(0), position(0);
+		get_status(&busy, &position);
+		if (!busy)
+		{
+			set_end_of_list();
+			execute_list(_list);
+			_list = _list ^ 0x03;
+			set_start_list(_list);
+		}
+		else
+		{
+			set_end_of_list();
+			auto_change();
+			READ_STATUS s;
+			switch (_list)
+			{
+			case 1:
+				do
+				{
+					s.value = read_status();
+					::Sleep(10);
+				} while (s.busy2);
+				break;
+
+			case 2:
+				do
+				{
+					s.value = read_status();
+					::Sleep(10);
+				} while (s.busy1);
+				break;
+			}
+			_list = _list ^ 0x03;
+			set_start_list(_list);
+		}
+
+		_listcnt = count;
+	}
+	_listcnt += count;
+	return TRUE;
+}
 
 }//namespace

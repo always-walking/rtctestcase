@@ -12,7 +12,7 @@ class Rtc5 : public Rtc
 {
 
 public:
-	virtual bool	__stdcall	initialize(double kfactor, char* ctbFileName);	/// bit/mm , ctb or ct5(rtc5)
+	virtual bool	__stdcall	initialize(double kfactor, char* ct5FileName);	/// bit/mm , ctb or ct5(rtc5)
 	virtual bool	__stdcall	listBegin();	/// opening internal buffers
 	virtual bool	__stdcall	listTiming(double frequency, double pulseWidth);	/// hz, usec
 	virtual bool	__stdcall	listDelay(double on, double off, double jump, double mark, double polygon); //usec
@@ -25,12 +25,15 @@ public:
 	virtual bool	__stdcall	listEnd();	/// closing internal buffers
 	virtual bool	__stdcall	listExecute(bool wait);	/// blocking until finish
 
-private:
-	double _kfactor;
+protected:
+	double	_kfactor;
+	UINT _list;
+	UINT _listcnt;
+	bool isBufferReady(UINT count);
 
 public:
 	Rtc5();
-	~Rtc5();
+	virtual ~Rtc5();
 };
 
 }//namespace
