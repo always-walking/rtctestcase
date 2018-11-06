@@ -138,8 +138,8 @@ bool __stdcall	Rtc6::listDelay(double on, double off, double jump, double mark, 
 	if (!this->isBufferReady(2))
 		return false;
 	set_laser_delays(
-		(LONG)(on * 2.0f),
-		(LONG)(off * 2.0f)
+		(LONG)(on * 64.0), // 1/64usec
+		(LONG)(off * 64.0)
 	);
 	set_scanner_delays(
 		(jump / 10.0f),
