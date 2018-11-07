@@ -207,7 +207,7 @@ bool	__stdcall Rtc4::listOn(double msec)
 	if (!this->isBufferReady(1))
 		return false;
 	laser_on_list(remind_msec * 1000 / 10);
-	return TRUE;
+	return true;
 }
 
 bool	__stdcall	Rtc4::listOff()
@@ -221,7 +221,7 @@ bool	__stdcall	Rtc4::listOff()
 bool __stdcall	Rtc4::listEnd()
 {
 	set_end_of_list();
-	return TRUE;
+	return true;
 }
 
 bool __stdcall Rtc4::listExecute(bool wait)
@@ -298,7 +298,7 @@ bool Rtc4::isBufferReady(UINT count)
 		_listcnt = count;
 	}
 	_listcnt += count;
-	return TRUE;
+	return true;
 }
 
 

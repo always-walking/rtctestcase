@@ -224,7 +224,7 @@ bool	__stdcall Rtc3::listOn(double msec)
 	if (!this->isBufferReady(1))
 		return false;
 	laser_on_list(remind_msec * 1000 / 10);
-	return TRUE;
+	return true;
 }
 
 bool	__stdcall	Rtc3::listOff()
@@ -238,21 +238,28 @@ bool	__stdcall	Rtc3::listOff()
 bool __stdcall	Rtc3::listEnd()
 {
 	set_end_of_list();	
-	return TRUE;
+	return true;
 }
 
 bool __stdcall Rtc3::listExecute(bool wait)
 {
-	execute_list(1);	
-	
+	USHORT busy(0), position(0);
+	get_status(&busy, &position);
+	if (busy)
+		auto_change();
+	else
+	{
+		execute_list(_list);		
+	}
+
 	if (wait)
 	{
-		unsigned short busy(0), position(0);
-		do {
-			::Sleep(10);
+		do 
+		{
 			get_status(&busy, &position);
+			::Sleep(10);
 		} while (busy);
-	}    
+	}
 	return true;
 }
 
@@ -315,7 +322,7 @@ bool Rtc3::isBufferReady(UINT count)
 		_listcnt = count;
 	}
 	_listcnt += count;
-	return TRUE;
+	return true;
 }
 
 
