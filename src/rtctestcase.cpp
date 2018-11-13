@@ -1,19 +1,36 @@
-/**********************************************************************************
- *
- *
- * testcase for scanlabs' rtc3/4/5 controller
- * powered by sepwind@gmail.com
- * http://sepwind.blogspot.com
- *
- *
- * history
- * 2017.4.12  v0.1 first release
- * 2018.11.   v0.2 added) rtc6 / rtc6 for ethernet	
- *                  added) double buffered by automatically for massive data
- * 2018.11.6  v0.3	added) 3d option (varioscan)
- *
- *
- **********************************************************************************/
+/*********************************************************************************
+*                                                                                *
+*                       RTC3 / 4 / 5 / 6 TESTCASE PROGRAM                        *
+*                                                                                *
+*                                                                                *
+* RTC is a trademark of SCANLAB(c) / http://scanlab.de                           *
+*                                                                                *
+*                                                                                *
+* 1. Descriptions                                                                *
+*  Simple way to use scanlab's rtc controller to control laser and               *
+*  scanner(galvanometers) via sample demo programs                               *
+*                                                                                *
+*                                                                                *
+* 2. Author                                                                      *
+*  hong chan, choi(sepwind@gmail.com)                                            *
+*  homepage : http://sepwind.blogspot.com                                        *
+*  git hub : https://github.com/sepwind/rtctestcase                              *
+*  git repository : https://github.com/sepwind/rtctestcase.git                   *
+*                                                                                *
+*                                                                                *
+* 3. Copyrights                                                                  *
+*  GNU General Public License version 3.0 (GPLv3)                                *
+*                                                                                *
+*                                                                                *
+* 4. Version history                                                             *
+*  v0.1 2017.4.11  first release                                                 *
+*  v0.2 2018.11.added) rtc6 / rtc6 for ethernet                                  *
+*                  added) double buffered by automatically for massive data      *
+*  v0.3	2018.11.6  added) 3d option(varioscan)                                   *
+*  v0.4 2018.11.13 added) marking on the fly interface / measurement             *
+*                                                                                *
+*                                                                                *
+**********************************************************************************/
 
 #include "include\rtc.h"
 #include <math.h>
@@ -22,8 +39,6 @@ using namespace sepwind;
 
 int main()
 {
-	printf("(c)SCANLAB testcase program by sepwind@gmail.com.  http://sepwind.blogspot.com\r\n");
-
 	//Rtc* pRtc = CreateRtc3();
 	//Rtc* pRtc = CreateRtc4();	
 	//Rtc* pRtc = CreateRtc5();
