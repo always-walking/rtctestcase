@@ -16,7 +16,7 @@ private:
 	char	_ipaddress[32];
 
 public:
-	Rtc6Ethernet(const char* ipaddress);
+	Rtc6Ethernet(const char* ipaddress, double xCntPerMm = 0.0, double yCntPerMm = 0.0);
 	virtual ~Rtc6Ethernet();
 };
 

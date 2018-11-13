@@ -10,9 +10,11 @@ namespace sepwind
 using namespace rtc4;
 
 
-Rtc4::Rtc4()
+Rtc4::Rtc4(double xCntPerMm, double yCntPerMm)
 {
 	_kfactor = 0.0;
+	_xCntPerMm = xCntPerMm;
+	_yCntPerMm = yCntPerMm;
 }
 
 Rtc4::~Rtc4()
@@ -84,6 +86,48 @@ bool	__stdcall	Rtc4::initialize(double kfactor, char* ctbFileName)
 
 	set_standby(0, 0);
 	return true;
+}
+
+bool	__stdcall	Rtc4::ctrlGetGatherSize()
+{
+	USHORT busy = 0;
+	USHORT position = 0;
+	measurement_status(&busy, &position);
+	if (busy > 0)
+		return false;
+
+	return position;
+}
+
+bool	__stdcall	Rtc4::ctrlGetGatherData(int channel, long* pReturnData, unsigned int size)
+{
+	if (size <= 0)
+		return false;
+
+	short tempData = 0;
+	get_waveform(channel, size, &tempData);
+	*pReturnData = tempData;
+	return true;
+}
+
+bool	__stdcall	Rtc4::ctrlGetEncoder(int* encX, int* encY, double* mmX, double* mmY)
+{
+	short enc[2] = { 0, };
+	get_encoder(&enc[0], &enc[1]);
+	*encX = enc[0];
+	*encX = enc[1];
+
+	if (0.0 == _xCntPerMm || 0.0 == _yCntPerMm)
+		return false;
+
+	*mmX = (double)enc[0] / _xCntPerMm;
+	*mmY = (double)enc[1] / _yCntPerMm;
+	return true;
+}
+
+bool	__stdcall	Rtc4::ctrlEncoderReset()
+{
+	return false;
 }
 
 bool __stdcall	Rtc4::listBegin()
@@ -221,6 +265,72 @@ bool	__stdcall	Rtc4::listOff()
 bool __stdcall	Rtc4::listEnd()
 {
 	set_end_of_list();
+	return true;
+}
+
+bool	__stdcall	Rtc4::listGatherBegin(double usec, int channel1, int channel2)
+{
+	if (!this->isBufferReady(1))
+		return false;
+
+	set_trigger(usec / 10, channel1, channel2);
+	return true;
+}
+
+bool	__stdcall	Rtc4::listGatherEnd()
+{
+	if (!this->isBufferReady(1))
+		return false;
+
+	set_trigger(0, 0, 0);
+	return true;
+}
+
+bool	__stdcall	Rtc4::listOnTheFlyBegin(bool encoderReset)
+{
+	if (!this->isBufferReady(1))
+		return false;
+
+	if (0.0 == _xCntPerMm || 0.0 == _yCntPerMm)
+	{
+		return false;	/// invalid cnt/mm
+	}
+
+	if (!this->isBufferReady(1))
+		return false;
+
+	double scalingFactor[2] = { \
+		_kfactor / _xCntPerMm,
+		_kfactor / _yCntPerMm
+	};
+
+	if (encoderReset)
+	{
+		set_fly_x(scalingFactor[0]);
+		set_fly_y(scalingFactor[1]);
+	}
+	else
+		return false;
+
+	return true;
+}
+
+bool	__stdcall	Rtc4::listOnTheFlyPosWait(bool xORy, double xyPos, int condition)
+{
+	return false;
+}
+
+bool	__stdcall	Rtc4::listOnTheFlyRangeWait(double x, double rangeX, double y, double rangeY)
+{
+	return false;
+}
+
+bool	__stdcall	Rtc4::listOnTheFlyEnd(double jumpTox, double jumpToy)
+{
+	if (!this->isBufferReady(1))
+		return false;
+
+	fly_return(jumpTox * _kfactor, jumpToy * _kfactor);
 	return true;
 }
 

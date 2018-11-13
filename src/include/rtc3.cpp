@@ -10,9 +10,11 @@ namespace sepwind
 using namespace rtc3;
 
 
-Rtc3::Rtc3()
+Rtc3::Rtc3(double xCntPerMm, double yCntPerMm)
 {
 	_kfactor = 0.0;
+	_xCntPerMm = xCntPerMm;
+	_yCntPerMm = yCntPerMm;
 	_x = _y = 0.0;
 }
 
@@ -87,6 +89,35 @@ bool	__stdcall	Rtc3::initialize(double kfactor, char* ctbFileName)
 	return true;
 }
 
+bool	__stdcall	Rtc3::ctrlGetGatherSize()
+{
+	return false;
+}
+
+bool	__stdcall	Rtc3::ctrlGetGatherData(int channel, long* pReturnData, unsigned int size)
+{
+	return false;
+}
+
+bool	__stdcall	Rtc3::ctrlGetEncoder(int* encX, int* encY, double* mmX, double* mmY)
+{
+	short enc[2] = { 0, };
+	get_encoder(&enc[0], &enc[1]);
+	*encX = enc[0];
+	*encX = enc[1];
+
+	if (0.0 == _xCntPerMm || 0.0 == _yCntPerMm)
+		return false;
+
+	*mmX = (double)enc[0] / _xCntPerMm;
+	*mmY = (double)enc[1] / _yCntPerMm;
+	return true;
+}
+
+bool	__stdcall	Rtc3::ctrlEncoderReset()
+{
+	return false;
+}
 bool __stdcall	Rtc3::listBegin()
 {
 	_list = 1;
@@ -238,6 +269,65 @@ bool	__stdcall	Rtc3::listOff()
 bool __stdcall	Rtc3::listEnd()
 {
 	set_end_of_list();	
+	return true;
+}
+
+
+bool	__stdcall	Rtc3::listGatherBegin(double usec, int channel1, int channel2)
+{
+	return false;
+}
+
+bool	__stdcall	Rtc3::listGatherEnd()
+{
+	return false;
+}
+
+bool	__stdcall	Rtc3::listOnTheFlyBegin(bool encoderReset)
+{
+	if (!this->isBufferReady(1))
+		return false;
+
+	if (0.0 == _xCntPerMm || 0.0 == _yCntPerMm)
+	{
+		return false;	/// invalid cnt/mm
+	}
+
+	if (!this->isBufferReady(1))
+		return false;
+
+	double scalingFactor[2] = { \
+		_kfactor / _xCntPerMm,
+		_kfactor / _yCntPerMm
+	};
+
+	if (encoderReset)
+	{
+		set_fly_x(scalingFactor[0]);
+		set_fly_y(scalingFactor[1]);
+	}
+	else
+		return false;
+
+	return true;
+}
+
+bool	__stdcall	Rtc3::listOnTheFlyPosWait(bool xORy, double xyPos, int condition)
+{
+	return false;
+}
+
+bool	__stdcall	Rtc3::listOnTheFlyRangeWait(double x, double rangeX, double y, double rangeY)
+{
+	return false;
+}
+
+bool	__stdcall	Rtc3::listOnTheFlyEnd(double jumpTox, double jumpToy)
+{
+	if (!this->isBufferReady(1))
+		return false;
+
+	fly_return(jumpTox * _kfactor, jumpToy * _kfactor);
 	return true;
 }
 

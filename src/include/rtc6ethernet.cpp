@@ -8,9 +8,11 @@ namespace sepwind
 using namespace rtc6;
 
 
-Rtc6Ethernet::Rtc6Ethernet(const char* ipaddress)
+Rtc6Ethernet::Rtc6Ethernet(const char* ipaddress, double xCntPerMm, double yCntPerMm)
 {
 	_kfactor = 0.0;
+	_xCntPerMm = xCntPerMm;
+	_yCntPerMm = yCntPerMm;
 	strcpy(_ipaddress, ipaddress);
 }
 

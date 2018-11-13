@@ -10,9 +10,11 @@ namespace sepwind
 using namespace rtc5;
 
 
-Rtc5::Rtc5()
+Rtc5::Rtc5(double xCntPerMm, double yCntPerMm)
 {
 	_kfactor = 0.0;
+	_xCntPerMm = xCntPerMm;
+	_yCntPerMm = yCntPerMm;
 }
 
 Rtc5::~Rtc5()
@@ -106,6 +108,47 @@ bool	__stdcall	Rtc5::initialize(double kfactor, char* ct5FileName)
 
 	config_list(4000, 4000);
 
+	return true;
+}
+
+bool	__stdcall	Rtc5::ctrlGetGatherSize()
+{
+	UINT busy = 0;
+	UINT position = 0;
+	measurement_status(&busy, &position);
+	if (busy > 0)
+		return false;
+
+	return position;
+}
+
+bool	__stdcall	Rtc5::ctrlGetGatherData(int channel, long* pReturnData, unsigned int size)
+{
+	if (size <= 0)
+		return false;
+
+	get_waveform(channel, size, (LONG_PTR)pReturnData);
+	return true;
+}
+
+bool	__stdcall	Rtc5::ctrlGetEncoder(int* encX, int* encY, double* mmX, double* mmY)
+{
+	long enc[2] = { 0, };
+	get_encoder(&enc[0], &enc[1]);
+	*encX = enc[0];
+	*encX = enc[1];
+
+	if (0.0 == _xCntPerMm || 0.0 == _yCntPerMm)
+		return false;
+	
+	*mmX = (double)enc[0] / _xCntPerMm;
+	*mmY = (double)enc[1] / _yCntPerMm;
+	return true;
+}
+
+bool	__stdcall	Rtc5::ctrlEncoderReset()
+{
+	init_fly_2d(0,0);
 	return true;
 }
 
@@ -233,6 +276,89 @@ bool __stdcall	Rtc5::listEnd()
 	return true;
 }
 
+bool	__stdcall	Rtc5::listGatherBegin(double usec, int channel1, int channel2)
+{
+	if (!this->isBufferReady(1))
+		return false; 
+
+	set_trigger(usec / 10, channel1, channel2);
+	return true;
+}
+
+bool	__stdcall	Rtc5::listGatherEnd()
+{
+	if (!this->isBufferReady(1))
+		return false;
+
+	set_trigger(0, 0, 0);
+	return true;
+}
+
+bool	__stdcall	Rtc5::listOnTheFlyBegin(bool encoderReset)
+{
+	if (!this->isBufferReady(1))
+		return false;
+
+	if (0.0 == _xCntPerMm || 0.0 == _yCntPerMm)
+	{
+		return false;	/// invalid cnt/mm
+	}
+
+	if (!this->isBufferReady(1))
+		return false;
+
+	double scalingFactor[2] = { \
+		_kfactor / _xCntPerMm,
+		_kfactor / _yCntPerMm
+	};
+
+	if (encoderReset)
+		set_fly_2d(scalingFactor[0], scalingFactor[1]);
+	else
+		activate_fly_2d(scalingFactor[0], scalingFactor[1]);	
+
+	return true;
+}
+
+bool	__stdcall	Rtc5::listOnTheFlyPosWait(bool xORy, double xyPos, int condition)
+{
+	if (!this->isBufferReady(1))
+		return false;
+
+	switch (xORy)
+	{
+	case 0:	//x
+		wait_for_encoder_mode(xyPos * _xCntPerMm, 0, condition);
+		break;
+	case 1:	//y
+		wait_for_encoder_mode(xyPos * _yCntPerMm, 1, condition);
+		break;
+	}
+		
+	return true;
+}
+
+bool	__stdcall	Rtc5::listOnTheFlyRangeWait(double x, double rangeX, double y, double rangeY)
+{
+	if (!this->isBufferReady(1))
+		return false;
+
+	wait_for_encoder_in_range(\
+		_xCntPerMm * (x - rangeX), _xCntPerMm * (x + rangeX),
+		_yCntPerMm * (y - rangeY), _yCntPerMm * (x + rangeY)
+	);
+	return true;
+}
+
+bool	__stdcall	Rtc5::listOnTheFlyEnd(double jumpTox, double jumpToy)
+{
+	if (!this->isBufferReady(1))
+		return false;
+
+	fly_return(jumpTox * _kfactor, jumpToy * _kfactor);	
+	return true;
+}
+
 bool __stdcall Rtc5::listExecute(bool wait)
 {
 	UINT busy(0), position(0);
@@ -240,9 +366,7 @@ bool __stdcall Rtc5::listExecute(bool wait)
 	if (busy)
 		auto_change();
 	else
-	{
 		execute_list(_list);
-	}
 
 	if (wait)
 	{
