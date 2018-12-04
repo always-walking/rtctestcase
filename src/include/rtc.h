@@ -12,6 +12,8 @@
 #define RTC_H
 
 #include <windows.h>
+#include "rtcutil.h"
+
 
 namespace sepwind
 {
@@ -23,7 +25,7 @@ public:
 	virtual bool	__stdcall	initialize(double kfactor, char* ctbFileName)=0;	/// bit/mm, ctb(rtc3,4) or ct5(rtc5,6)
 
 	/// control commands
-	virtual	bool	__stdcall	ctrlGetGatherSize()=0;
+	virtual	bool	__stdcall	ctrlGetGatherSize(unsigned int* pReturnSize)=0;
 	virtual bool	__stdcall	ctrlGetGatherData(int channel, long* pReturnData, unsigned int size)=0;
 	virtual bool	__stdcall	ctrlGetEncoder(int* encX, int* encY, double* mmX, double* mmY)=0;
 	virtual bool	__stdcall	ctrlEncoderReset()=0;
@@ -40,10 +42,15 @@ public:
 	virtual bool	__stdcall	listOn(double msec) = 0; ///msec
 	virtual bool	__stdcall	listOff() = 0;
 
+	/// matrix for transformation 
+	virtual bool	__stdcall	listMatrixLoadIdent()=0;	///3*3 identity matrix
+	virtual bool	__stdcall	listMatrixPush(const MATRIX3D& m)=0;	///3*3 push to right
+	virtual bool	__stdcall	listMatrixPop()=0;	///3*3 pop from right
+
 	/// x,y,z coordinate
 	virtual bool	__stdcall	listJump(double x, double y, double z=0.0)=0; /// mm
 	virtual bool	__stdcall	listMark(double x, double y, double z=0.0)=0;	/// mm
-	virtual bool	__stdcall	listArc(double cx, double cy, double sweepAngle, double cz=0.0)=0; /// mm, mm, positive angle is ccw, mm
+	virtual bool	__stdcall	listArc(double cx, double cy, double sweepAngle, double z=0.0)=0; /// mm, mm, positive angle is ccw, mm
 
 	/// measurement data for plot
 	virtual bool	__stdcall	listGatherBegin(double usec, int channel1, int channel2) = 0;
@@ -58,15 +65,12 @@ public:
 	virtual ~Rtc();
 };
 
-
 Rtc*	__stdcall	CreateRtc3();
 Rtc*	__stdcall	CreateRtc4();
 Rtc*	__stdcall	CreateRtc5();
 Rtc*	__stdcall	CreateRtc6();
 Rtc*	__stdcall	CreateRtc6Ethernet(const char* ipaddress);
 void	__stdcall	DestroyRtc(Rtc** ppRtc);
-
-
 
 }//namespace
 

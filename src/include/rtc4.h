@@ -3,7 +3,7 @@
 
 
 #include "rtc.h"
-
+#include <vector>
 
 namespace sepwind
 {
@@ -15,7 +15,7 @@ public:
 	virtual bool	__stdcall	initialize(double kfactor, char* ctbFileName);	/// bit/mm, ctb(rtc3,4) or ct5(rtc5,6)
 
 	/// control commands
-	virtual	bool	__stdcall	ctrlGetGatherSize();
+	virtual	bool	__stdcall	ctrlGetGatherSize(unsigned int* pReturnSize);
 	virtual bool	__stdcall	ctrlGetGatherData(int channel, long* pReturnData, unsigned int size);
 	virtual bool	__stdcall	ctrlGetEncoder(int* encX, int* encY, double* mmX, double* mmY);
 	virtual bool	__stdcall	ctrlEncoderReset();
@@ -32,10 +32,15 @@ public:
 	virtual bool	__stdcall	listOn(double msec); ///msec
 	virtual bool	__stdcall	listOff();
 
+	/// matrix for transformation 
+	virtual bool	__stdcall	listMatrixLoadIdent();	///3*3 identity matrix
+	virtual bool	__stdcall	listMatrixPush(const MATRIX3D& m);	///3*3 push to right
+	virtual bool	__stdcall	listMatrixPop();	///3*3 pop from right
+
 	/// x,y,z coordinate
 	virtual bool	__stdcall	listJump(double x, double y, double z = 0.0); /// mm
 	virtual bool	__stdcall	listMark(double x, double y, double z = 0.0);	/// mm
-	virtual bool	__stdcall	listArc(double cx, double cy, double sweepAngle, double cz = 0.0); /// mm, mm, positive angle is ccw, mm
+	virtual bool	__stdcall	listArc(double cx, double cy, double sweepAngle, double z = 0.0); /// mm, mm, positive angle is ccw, mm
 
 	/// measurement data for plot
 	virtual bool	__stdcall	listGatherBegin(double usec, int channel1, int channel2);
@@ -54,6 +59,7 @@ protected:
 	double _yCntPerMm;
 	UINT _list;
 	UINT _listcnt;
+	std::vector<MATRIX3D> _matrices;
 	bool isBufferReady(UINT count);
 
 public:

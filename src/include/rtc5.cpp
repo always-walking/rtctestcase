@@ -111,15 +111,15 @@ bool	__stdcall	Rtc5::initialize(double kfactor, char* ct5FileName)
 	return true;
 }
 
-bool	__stdcall	Rtc5::ctrlGetGatherSize()
+bool	__stdcall	Rtc5::ctrlGetGatherSize(unsigned int* pReturnSize)
 {
 	UINT busy = 0;
 	UINT position = 0;
 	measurement_status(&busy, &position);
 	if (busy > 0)
 		return false;
-
-	return position;
+	*pReturnSize = position;
+	return true;
 }
 
 bool	__stdcall	Rtc5::ctrlGetGatherData(int channel, long* pReturnData, unsigned int size)
@@ -157,6 +157,7 @@ bool __stdcall	Rtc5::listBegin()
 	_list = 1;
 	_listcnt = 0;
 	set_start_list(1);
+	_matrices.clear();
 	return true;
 }
 
@@ -202,6 +203,85 @@ bool __stdcall	Rtc5::listSpeed(double jump, double mark)
 	return true;
 }
 
+bool	__stdcall	Rtc5::listMatrixLoadIdent()
+{
+	_matrices.clear();
+	MATRIX3D ident;
+	MAT_IDENT(&ident);
+	_matrices.push_back(ident);
+
+	if (!this->isBufferReady(2))
+		return false;
+
+	// 2*2 matrix
+	set_matrix(1, 
+		1, 0,
+		0, 1,
+		1);
+	// dx/dy
+	set_offset( 1,
+		0, 0,		
+		1);
+	return true;
+}
+
+bool	__stdcall	Rtc5::listMatrixPush(const MATRIX3D& m)
+{
+	_matrices.push_back(m);
+
+	MATRIX3D mResult = _matrices[0];
+	for (size_t i = 1; i < _matrices.size(); i++)
+	{
+		mResult = MAT_MULTI(&mResult, &_matrices[i]);
+	}
+
+	if (!this->isBufferReady(2))
+		return false;
+
+	// 2*2 matrix
+	set_matrix(1,
+		mResult.e[0], mResult.e[1],
+		mResult.e[3], mResult.e[4],
+		1);
+
+	// dx/dy
+	set_offset(1,
+		mResult.e[2], mResult.e[5],
+		1);
+	return true;
+}
+
+bool	__stdcall	Rtc5::listMatrixPop()
+{
+	if (_matrices.size() <= 1)
+	{
+		fprintf(stderr, "mismatch push/pop to matrices");
+		return false;
+	}
+
+	_matrices.pop_back();
+	MATRIX3D mResult = _matrices[0];
+	for (size_t i = 1; i < _matrices.size(); i++)
+	{
+		mResult = MAT_MULTI(&mResult, &_matrices[i]);
+	}
+
+	if (!this->isBufferReady(2))
+		return false;
+
+	// 2*2 matrix
+	set_matrix(1,
+		mResult.e[0], mResult.e[1],
+		mResult.e[3], mResult.e[4],
+		1);
+
+	// dx/dy
+	set_offset(1,
+		mResult.e[2], mResult.e[5],
+		1);
+	return true;
+}
+
 bool __stdcall	Rtc5::listJump(double x, double y, double z)
 {
 	int xbits = x * _kfactor;
@@ -231,15 +311,15 @@ bool __stdcall	Rtc5::listMark(double x, double y, double z)
 	return true;
 }
 
-bool __stdcall	Rtc5::listArc(double cx, double cy, double sweepAngle, double cz)
+bool __stdcall	Rtc5::listArc(double cx, double cy, double sweepAngle, double z)
 {
 	int cxbits = cx * _kfactor;
 	int cybits = cy * _kfactor;
-	int czbits = cz * _kfactor / 16.0;
+	int zbits = z * _kfactor / 16.0;
 	if (!this->isBufferReady(1))
 		return false;
 	if (_3d)
-		arc_abs_3d(cxbits, cybits, czbits, - sweepAngle);
+		arc_abs_3d(cxbits, cybits, zbits, - sweepAngle);
 	else
 		arc_abs(cxbits, cybits, -sweepAngle);
 	return true;

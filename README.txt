@@ -3,8 +3,6 @@
 *                       RTC3/4/5/6 TESTCASE PROGRAM                              *
 *                                                                                *
 *                                                                                *
-* RTC is a trademark of SCANLAB(c) / http://scanlab.de                           *
-*                                                                                *
 *                                                                                *
 * 1. Descriptions                                                                *
 *  Simple way to use scanlab's rtc controller to control laser and               *
@@ -28,8 +26,8 @@
 *                  added) double buffered by automatically for massive data      *
 *  v0.3	2018.11.6  added) 3d option (varioscan)                                  *
 *  v0.4 2018.11.13 added) marking on the fly interface / measurement             *
-*                                                                                *
-*                                                                                *
+*  v0.5 2018.12.4  added) push/pop 3x3 matrix operations                         *
+*                  fixed) get measurement data size bug                          *
 *                                                                                *
 *                                                                                *
 **********************************************************************************

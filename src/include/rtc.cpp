@@ -8,7 +8,6 @@
 namespace sepwind
 {
 
-
 Rtc*	__stdcall	CreateRtc3()
 {
 	return new Rtc3();

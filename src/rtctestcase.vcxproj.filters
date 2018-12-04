@@ -39,6 +39,9 @@
     <ClCompile Include="rtctestcase.cpp">
       <Filter>include</Filter>
     </ClCompile>
+    <ClCompile Include="include\rtcutil.cpp">
+      <Filter>include</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\rtc3expl.h">
@@ -69,6 +72,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="include\rtc6expl.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\rtcutil.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

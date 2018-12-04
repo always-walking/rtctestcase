@@ -89,7 +89,7 @@ bool	__stdcall	Rtc3::initialize(double kfactor, char* ctbFileName)
 	return true;
 }
 
-bool	__stdcall	Rtc3::ctrlGetGatherSize()
+bool	__stdcall	Rtc3::ctrlGetGatherSize(unsigned int* pReturnSize)
 {
 	return false;
 }
@@ -123,6 +123,7 @@ bool __stdcall	Rtc3::listBegin()
 	_list = 1;
 	_listcnt = 0;
 	set_start_list(1);
+	_matrices.clear();
 	return true;
 }
 
@@ -180,6 +181,77 @@ bool __stdcall	Rtc3::listSpeed(double jump, double mark)
 	return true;
 }
 
+bool	__stdcall	Rtc3::listMatrixLoadIdent()
+{
+	_matrices.clear();
+	MATRIX3D ident;
+	MAT_IDENT(&ident);
+	_matrices.push_back(ident);
+
+	if (!this->isBufferReady(2))
+		return false;
+
+	// 2*2 matrix
+	set_matrix(
+		1, 0,
+		0, 1);
+	// dx/dy
+	set_offset(0, 0);
+	return true;
+}
+
+bool	__stdcall	Rtc3::listMatrixPush(const MATRIX3D& m)
+{
+	_matrices.push_back(m);
+
+	MATRIX3D mResult = _matrices[0];
+	for (size_t i = 1; i < _matrices.size(); i++)
+	{
+		mResult = MAT_MULTI(&mResult, &_matrices[i]);
+	}
+
+	if (!this->isBufferReady(2))
+		return false;
+
+	// 2*2 matrix
+	set_matrix(
+		mResult.e[0], mResult.e[1],
+		mResult.e[3], mResult.e[4]
+		);
+
+	// dx/dy
+	set_offset(mResult.e[2], mResult.e[5]);
+	return true;
+}
+
+bool	__stdcall	Rtc3::listMatrixPop()
+{
+	if (_matrices.size() <= 1)
+	{
+		fprintf(stderr, "mismatch push/pop to matrices");
+		return false;
+	}
+
+	_matrices.pop_back();
+	MATRIX3D mResult = _matrices[0];
+	for (size_t i = 1; i < _matrices.size(); i++)
+	{
+		mResult = MAT_MULTI(&mResult, &_matrices[i]);
+	}
+
+	if (!this->isBufferReady(2))
+		return false;
+
+	// 2*2 matrix
+	set_matrix(
+		mResult.e[0], mResult.e[1],
+		mResult.e[3], mResult.e[4]);
+
+	// dx/dy
+	set_offset(mResult.e[2], mResult.e[5]);
+	return true;
+}
+
 bool __stdcall	Rtc3::listJump(double x, double y, double z)
 {
 	int xbits = x * _kfactor;
@@ -208,9 +280,9 @@ bool __stdcall	Rtc3::listMark(double x, double y, double z)
 	return true;
 }
 
-bool __stdcall	Rtc3::listArc(double cx, double cy, double sweepAngle, double cz)
+bool __stdcall	Rtc3::listArc(double cx, double cy, double sweepAngle, double z)
 {
-	if (_3d && cz != 0.0)
+	if (_3d && z != 0.0)
 	{
 		/// user defined code 
 		fprintf(stderr, "unsupported list arc with 3d\r\n");
